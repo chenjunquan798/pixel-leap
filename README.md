@@ -79,7 +79,7 @@ pixel-leap/
 │   └── index.template.html # HTML 骨架（构建时注入 CSS/JS）
 ├── styles.css              # DOM 层样式
 ├── build.mjs               # 零依赖构建：模块 → 单文件
-├── tests/                  # node:test 测试（51 项）
+├── tests/                  # node:test 测试（52 项）
 ├── tools/                  # 开发工具（截图验证、OG 图生成）
 ├── assets/                 # OG 图与 PWA 图标
 ├── privacy.html            # 隐私与无障碍说明
