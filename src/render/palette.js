@@ -1,14 +1,11 @@
 // 调色板与三区域主题（PRD 9.3 / 9.2）
 export const C = {
   ink: '#17101F',
-  inkSoft: '#241A35',
   cream: '#FFF3D6',
   creamDim: '#E8D3A9',
   pink: '#E0446F',
-  pinkText: '#A8244A',
   gold: '#FFD166',
   teal: '#0C7C75',
-  muted: '#6E6478',
   white: '#FFFDF5',
 };
 

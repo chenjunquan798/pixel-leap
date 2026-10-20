@@ -80,8 +80,5 @@ export const MAX_GAP = Math.floor(JUMP_HEIGHT * 0.6);
 export const MAX_DX = 135;
 
 export const ZONE_THRESHOLDS = [200, 500];
-export const ZONE_NAMES = ['night', 'dusk', 'space'];
-export const ZONE_LABELS_ZH = ['夜幕', '霞光层', '深空'];
-export const ZONE_LABELS_EN = ['NIGHTFALL', 'DUSK', 'DEEP SPACE'];
 
 export const CRUMBLE_DELAY = 0.28; // 碎裂平台：先弹一次，0.28s 后消失

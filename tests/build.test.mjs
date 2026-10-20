@@ -12,18 +12,52 @@ test('构建产物存在', () => {
 });
 
 const html = exists ? fs.readFileSync(INDEX, 'utf8') : '';
-const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
+// 只取无属性的 <script>（游戏 bundle），不要匹配 JSON-LD 的 <script type=...>
+const scriptMatch = html.match(/<script>\r?\n([\s\S]*?)\r?\n<\/script>/);
 const script = scriptMatch ? scriptMatch[1] : '';
 const css = (html.match(/<style>([\s\S]*?)<\/style>/) || [])[1] || '';
 
-test('包体在预算内（PRD 11.2：首屏 JS ≤80KB，整包目标 ≤80KB）', () => {
+// PRD 11.6 的 80KB 按十进制字节理解（PRD 自己的 57KB 基线 = 57,044 B）
+const BUDGET = 80000;
+
+test('包体在预算内（PRD 11.2：首屏 JS ≤80KB，整包 ≤80KB）', () => {
   const jsBytes = Buffer.byteLength(script, 'utf8');
   const totalBytes = Buffer.byteLength(html, 'utf8');
-  assert.ok(jsBytes <= 80 * 1024, `inline JS ${(jsBytes / 1024).toFixed(1)}KB exceeds 80KB`);
-  assert.ok(
-    totalBytes <= 80 * 1024,
-    `index.html ${(totalBytes / 1024).toFixed(1)}KB exceeds the 80KB package budget`
-  );
+  assert.ok(jsBytes <= BUDGET, `inline JS ${jsBytes} B exceeds ${BUDGET} B`);
+  assert.ok(totalBytes <= BUDGET, `index.html ${totalBytes} B exceeds the ${BUDGET} B budget`);
+});
+
+test('配色对比度达到 WCAG AA（A11Y-03）', () => {
+  const rgb = (hex) => {
+    const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+  const lin = (c) => {
+    const s = c / 255;
+    return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const lum = (hex) => {
+    const [r, g, b] = rgb(hex);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  };
+  const contrast = (a, b) => {
+    const [l1, l2] = [lum(a), lum(b)].sort((x, y) => y - x);
+    return (l1 + 0.05) / (l2 + 0.05);
+  };
+  const over = (fg, bg, alpha) => {
+    const a = rgb(fg);
+    const b = rgb(bg);
+    const mix = a.map((v, i) => Math.round(v * alpha + b[i] * (1 - alpha)));
+    return `#${mix.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+  };
+
+  // 主 CTA：白字压在渐变的两端
+  assert.ok(contrast('#ffffff', '#cc3a5c') >= 4.5, 'CTA gradient top');
+  assert.ok(contrast('#ffffff', '#a8244a') >= 4.5, 'CTA gradient bottom');
+  // tagline：68% cream 压在面板底色上
+  assert.ok(contrast(over('#fff3d6', '#14101f', 0.68), '#14101f') >= 4.5, 'tagline');
+  // HUD 主文字与深色天空
+  assert.ok(contrast('#fff3d6', '#17101f') >= 4.5, 'HUD cream on ink');
 });
 
 test('内联脚本语法有效', () => {

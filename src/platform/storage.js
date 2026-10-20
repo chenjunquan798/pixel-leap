@@ -11,6 +11,8 @@ export const DEFAULT_STATE = {
   runs: 0,
   starsTotal: 0,
   lastPlayed: 0,
+  sessionId: 0,
+  lastActiveAt: 0,
   ledger: [],
 };
 
@@ -31,6 +33,8 @@ export function sanitizeState(raw) {
   if (isFiniteNumber(raw.runs)) out.runs = Math.max(0, Math.floor(raw.runs));
   if (isFiniteNumber(raw.starsTotal)) out.starsTotal = Math.max(0, Math.floor(raw.starsTotal));
   if (isFiniteNumber(raw.lastPlayed)) out.lastPlayed = raw.lastPlayed;
+  if (isFiniteNumber(raw.sessionId)) out.sessionId = Math.max(0, Math.floor(raw.sessionId));
+  if (isFiniteNumber(raw.lastActiveAt)) out.lastActiveAt = raw.lastActiveAt;
   if (Array.isArray(raw.ledger)) out.ledger = raw.ledger.slice(-200);
   return { state: out, repaired };
 }
@@ -62,6 +66,9 @@ export function createStore(storage) {
     }
   }
 
+  // 损坏的数据立刻用干净默认值覆盖：否则每次刷新都会重复弹「存档损坏」提示。
+  if (corrupted) persist();
+
   return {
     corrupted,
     getState: () => state,
@@ -89,19 +96,23 @@ export function createStore(storage) {
   };
 }
 
-// 浏览器环境下取一个可用的 storage；失败时返回内存实现（隐私模式）。
+// 浏览器环境下取一个可用的 storage；失败时返回内存实现（隐私模式），
+// 并用 ephemeral 标记让调用方可以给出「存档不可用」的提示（A11Y-10 / §6.6）。
 export function safeStorage() {
   try {
     const probe = '__pl_probe__';
     window.localStorage.setItem(probe, '1');
     window.localStorage.removeItem(probe);
-    return window.localStorage;
+    return { storage: window.localStorage, ephemeral: false };
   } catch {
     const mem = new Map();
     return {
-      getItem: (k) => (mem.has(k) ? mem.get(k) : null),
-      setItem: (k, v) => mem.set(k, String(v)),
-      removeItem: (k) => mem.delete(k),
+      ephemeral: true,
+      storage: {
+        getItem: (k) => (mem.has(k) ? mem.get(k) : null),
+        setItem: (k, v) => mem.set(k, String(v)),
+        removeItem: (k) => mem.delete(k),
+      },
     };
   }
 }

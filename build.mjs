@@ -39,6 +39,10 @@ function stripModule(src) {
   // 单行与多行 import 都要去掉
   body = body.replace(/^import\s+[\s\S]*?\s+from\s+['"][^'"]+['"];?[ \t]*\r?\n/gm, '');
   body = body.replace(/^import\s+['"][^'"]+['"];?[ \t]*\r?\n/gm, '');
+  // 默认构建剔除动态分享卡（P1，PRD 11.6 的砍功能顺序第一位）
+  if (!WITH_CARD) {
+    body = body.replace(/^[ \t]*\/\*#card\*\/[\s\S]*?\/\*#endcard\*\/[ \t]*\r?\n/gm, '');
+  }
   body = body.replace(
     /^export\s+(async\s+)?(function|const|let|class)\s+([A-Za-z_$][\w$]*)/gm,
     (_m, a, kind, name) => {
@@ -52,20 +56,16 @@ function stripModule(src) {
   if (/^import\s/m.test(body)) {
     throw new Error('Unresolved import remains after stripping');
   }
+  if (body.includes('#card#')) {
+    throw new Error('Card block markers were not stripped');
+  }
   return { body, names };
-}
-
-// 只去掉缩进、空行与纯注释行 —— 不会影响 ASI 或字符串
-function compact(src) {
-  return src
-    .split('\n')
-    .map((line) => line.replace(/^[ \t]+/, ''))
-    .filter((line) => line.trim() && !line.trim().startsWith('//'))
-    .join('\n');
 }
 
 // 保守的空白压缩：字符串 / 模板 / 注释之外的连续空白压成一个空格，
 // 并去掉标点两侧的空格；保留换行以保证 ASI 语义不变。
+// 注意：扫描器不识别正则字面量；当前源码里的正则都不含 // 或引号，
+// 若以后新增这类正则，需要先扩展扫描器。
 const PUNCT = '{}()[];,.:<>?=+-*/%&|^!~';
 function minifyCode(src) {
   let out = '';
@@ -137,7 +137,6 @@ ORDER.forEach((rel, i) => {
     used.add(name);
   }
   const id = `__pl_m${i}`;
-  chunks.push(`/*${rel.replace('src/', '')}*/`);
   chunks.push(`const ${id}=(function(){`);
   chunks.push(minifyCode(body));
   if (names.length) chunks.push(`return{${names.join(',')}};`);
@@ -157,8 +156,19 @@ const out = path.join(root, 'index.html');
 fs.writeFileSync(out, html, 'utf8');
 
 const bytes = Buffer.byteLength(html, 'utf8');
-const kb = (bytes / 1024).toFixed(1);
-console.log(`built index.html  ${bytes} bytes  (${kb} KB)`);
-if (bytes > 80 * 1024) {
-  console.log(`WARNING: bundle exceeds the 80 KB budget (${kb} KB)`);
+const jsBytes = Buffer.byteLength(js, 'utf8');
+const kib = (bytes / 1024).toFixed(1);
+console.log(
+  `built index.html  ${bytes} bytes (${kib} KiB, ${bytes} B)  inline JS ${jsBytes} B`
+);
+
+// PRD 11.6：80KB 是硬上限。--with-card 是有意超标的质量构建，只警告不失败。
+const LIMIT = 80 * 1024;
+if (bytes > LIMIT) {
+  if (WITH_CARD) {
+    console.log(`NOTE: --with-card 构建为 ${kib} KiB，超过 80 KiB 上限（按 PRD 11.6 属可选 P1）`);
+  } else {
+    console.error(`ERROR: bundle ${kib} KiB exceeds the 80 KiB budget (${LIMIT} bytes)`);
+    process.exit(1);
+  }
 }

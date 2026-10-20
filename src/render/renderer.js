@@ -7,8 +7,8 @@ import { createBackground } from './background.js';
 import { drawPlayer, drawPlatform, drawStar } from './sprites.js';
 
 export function createRenderer(canvas) {
-  const ctx = canvas.getContext('2d', { alpha: false });
-  const bg = createBackground();
+  let ctx = canvas.getContext('2d', { alpha: false });
+  let bg = createBackground();
   let particles = [];
   let floats = [];
   let shakeMag = 0;
@@ -62,10 +62,18 @@ export function createRenderer(canvas) {
       lowQuality = !!low;
     },
 
+    // 画布上下文恢复后重建离屏天空缓存（离屏 canvas 也可能一起失效）
+    rebuild() {
+      ctx = canvas.getContext('2d', { alpha: false });
+      bg = createBackground();
+    },
+
     emit(events, world, opts = {}) {
+      // 减弱动效时粒子直接减半（PRD A11Y-05 / 9.4），不只是变慢
+      const k = opts.reduced ? 0.5 : 1;
       for (const ev of events) {
         if (ev.type === 'land') {
-          burst(ev.x, ev.y - 2, 6, {
+          burst(ev.x, ev.y - 2, 6 * k, {
             speed: 90,
             angle: -Math.PI / 2,
             spread: Math.PI,
@@ -75,7 +83,7 @@ export function createRenderer(canvas) {
             gravity: 220,
           });
         } else if (ev.type === 'spring') {
-          burst(ev.x, ev.y - 8, 12, {
+          burst(ev.x, ev.y - 8, 12 * k, {
             speed: 210,
             angle: -Math.PI / 2,
             spread: Math.PI * 0.8,
@@ -86,7 +94,7 @@ export function createRenderer(canvas) {
           });
           if (!opts.reduced) api.shake(5);
         } else if (ev.type === 'star') {
-          burst(ev.x, ev.y, 14, {
+          burst(ev.x, ev.y, 14 * k, {
             speed: 180,
             life: 0.55,
             size: 3,
@@ -95,7 +103,7 @@ export function createRenderer(canvas) {
           });
           floats.push({ x: ev.x, y: ev.y - 6, text: '+10', life: 0.9, max: 0.9, color: C.gold });
         } else if (ev.type === 'crack') {
-          burst(ev.x, ev.y + 4, 8, {
+          burst(ev.x, ev.y + 4, 8 * k, {
             speed: 120,
             life: 0.45,
             size: 3,
@@ -103,7 +111,7 @@ export function createRenderer(canvas) {
             gravity: 520,
           });
         } else if (ev.type === 'dead') {
-          burst(ev.x, ev.y, 16, {
+          burst(ev.x, ev.y, 16 * k, {
             speed: 190,
             angle: -Math.PI / 2,
             spread: Math.PI,

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createWorld } from '../src/core/world.js';
+import { createWorld, ensurePlatforms } from '../src/core/world.js';
 import { PHYS, CRUMBLE_DELAY, STEP } from '../src/core/config.js';
 
 function bare() {
@@ -145,6 +145,42 @@ test('越过 200m / 500m 各触发一次区域事件与里程碑', () => {
   moveTo(510);
   assert.ok(w.events.some((e) => e.type === 'zone' && e.zone === 2));
   assert.ok(w.events.some((e) => e.type === 'milestone' && e.meters === 500));
+});
+
+test('吃掉多颗星星后仍然继续生成新星星（回归：星星配额被已吃掉的星星卡死）', () => {
+  const w = createWorld({ seed: 31 });
+  let guard = 0;
+  while (w.stars.length < 7 && guard++ < 600) {
+    w.cameraY -= 60;
+    ensurePlatforms(w);
+  }
+  assert.ok(w.stars.length >= 7, `star pool should fill, got ${w.stars.length}`);
+
+  // 全部吃掉，模拟连续收集
+  for (const star of w.stars) star.taken = true;
+  w.step(); // cleanup 回收已吃掉的星星
+
+  w.cameraY -= 900;
+  ensurePlatforms(w);
+  const live = w.stars.filter((s) => !s.taken).length;
+  assert.ok(live > 0, 'new stars must keep spawning after all previous ones were collected');
+});
+
+test('死亡后继续调用 step 不会重复触发 dead 事件或改变统计', () => {
+  const w = bare();
+  w.player.y = w.cameraY + 720 + PHYS.DEATH_MARGIN + 30;
+  w.player.prevY = w.player.y - 10;
+  w.player.vy = 1200;
+  w.step();
+  assert.ok(w.dead);
+  const score = w.stats.score;
+  const meters = w.stats.meters;
+
+  w.events.length = 0;
+  for (let i = 0; i < 5; i++) w.step();
+  assert.equal(w.events.filter((e) => e.type === 'dead').length, 0);
+  assert.equal(w.stats.score, score);
+  assert.equal(w.stats.meters, meters);
 });
 
 test('坠落结算事件携带本局统计', () => {

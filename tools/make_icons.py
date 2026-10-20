@@ -68,6 +68,13 @@ img.resize((180, 180), Image.NEAREST).save(
     os.path.join(OUT, "apple-touch-icon.png"), "PNG", optimize=True
 )
 
-for name in ("icon-512.png", "icon-192.png", "apple-touch-icon.png"):
+# Maskable 图标：内容缩到 70%，留出 Android 圆形遮罩的安全区
+maskable = Image.new("RGB", (size, size), INK)
+inner = img.resize((int(size * 0.7), int(size * 0.7)), Image.NEAREST)
+offset = (size - inner.width) // 2
+maskable.paste(inner, (offset, offset))
+maskable.save(os.path.join(OUT, "icon-maskable-512.png"), "PNG", optimize=True)
+
+for name in ("icon-512.png", "icon-192.png", "apple-touch-icon.png", "icon-maskable-512.png"):
     p = os.path.join(OUT, name)
     print(name, os.path.getsize(p), "bytes")

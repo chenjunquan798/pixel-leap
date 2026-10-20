@@ -1,7 +1,7 @@
 // 离线缓存（PRD FR-17 / P1）。只缓存本游戏自己的静态资源，不碰第三方。
 // 更新策略：版本号变化时清理旧缓存，新版本在下次访问生效，不打断当前这一局。
 
-const CACHE = 'pixel-leap-v2.0.0';
+const CACHE = 'pixel-leap-v2.0.1';
 const ASSETS = [
   './',
   './index.html',

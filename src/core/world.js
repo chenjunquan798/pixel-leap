@@ -73,34 +73,11 @@ export function createWorld(options = {}) {
       meters: 0,
       stars: 0,
       heightPx: 0,
-      landings: 0,
-      bounces: 0,
     },
   };
 
   world.reset = (seed) => resetWorld(world, seed);
   world.step = () => stepWorld(world);
-  world.press = (dir) => {
-    if (dir === 'left') world.input.left = true;
-    if (dir === 'right') world.input.right = true;
-  };
-  world.release = (dir) => {
-    if (dir === 'left') world.input.left = false;
-    if (dir === 'right') world.input.right = false;
-    if (dir === 'all') {
-      world.input.left = false;
-      world.input.right = false;
-    }
-  };
-  world.snapshot = () => ({
-    score: world.stats.score,
-    meters: world.stats.meters,
-    stars: world.stats.stars,
-    heightPx: world.stats.heightPx,
-    zone: world.zone,
-    dead: world.dead,
-    bestAtEnd: 0,
-  });
 
   resetWorld(world, options.seed ?? 1);
   return world;
@@ -154,18 +131,11 @@ function resetWorld(world, seed) {
     cx: VIEW.W / 2,
   });
 
-  // 第一块平台固定在正上方（PRD 6.2 / 8.5）
+  // 第一块平台固定在正上方（PRD 6.2 / 8.5）。
+  // 它的星星由 spawnPlatform 的 isFirst 分支生成——这里不能再补一颗，
+  // 否则首星会重叠成两颗（+20、双音效、多占一个配额）。
   world.nextY = world.startY - 96;
   spawnPlatform(world, true);
-  // 第一颗星在首次跳跃路径上
-  const first = world.platforms[world.platforms.length - 1];
-  world.stars.push({
-    id: world.nextId++,
-    x: first.x + first.w / 2,
-    y: first.y - 64,
-    taken: false,
-    phase: 0.4,
-  });
 
   // 预生成首屏上方的平台，保证开局没有空档
   ensurePlatforms(world);
@@ -180,8 +150,9 @@ function spawnPlatform(world, isFirst = false) {
 
   const inSafeZone = y > world.startY - SAFE_ZONE_PX;
 
-  const widthBase = lerp(band.width[0], band.width[1], p) * (0.9 + rng() * 0.2);
-  const w = Math.round(clamp(widthBase, 52, 118));
+  // 宽度与间隙都在 BANDS 声明的区间内抖动，避免 ±10% 把数值推出 PRD 8.3 的表格区间
+  const widthBase = lerp(band.width[0], band.width[1], p) * (0.94 + rng() * 0.12);
+  const w = Math.round(clamp(widthBase, band.width[0], band.width[1]));
 
   // 水平偏移：一次跳跃可覆盖范围（PRD 8.5），首块固定在正上方
   const dx = isFirst ? 0 : (rng() * 2 - 1) * lerp(58, MAX_DX, p);
@@ -189,17 +160,17 @@ function spawnPlatform(world, isFirst = false) {
   const center = x + w / 2;
   world.cursorX = center;
 
-  // 类型：安全区内一律普通平台
+  // 类型：安全区内一律普通平台。
+  // 弹簧用独立的一次掷骰，否则概率会被 moving/crumble 的占比稀释。
   let type = 'normal';
   let spring = false;
   if (!inSafeZone && !isFirst) {
     const movingP = lerp(band.moving[0], band.moving[1], p);
     const crumbleP = lerp(band.crumble[0], band.crumble[1], p);
-    const springP = band.spring[0];
     const roll = rng();
     if (roll < movingP) type = 'moving';
     else if (roll < movingP + crumbleP) type = 'crumble';
-    else if (rng() < springP) spring = true;
+    else if (rng() < band.spring[0]) spring = true;
   }
 
   const amp = type === 'moving' ? 26 + rng() * 30 : 0;
@@ -223,8 +194,10 @@ function spawnPlatform(world, isFirst = false) {
   };
   world.platforms.push(plat);
 
-  // 星星：第一块必出，之后约 55% 概率
-  const canStar = type !== 'crumble' && world.stars.length < 7;
+  // 星星：第一块必出，之后约 55% 概率。
+  // 计数必须只看「还没被吃掉」的星星，否则吃满 7 颗后新星星会永远停止生成。
+  const liveStars = world.stars.reduce((n, s) => (s.taken ? n : n + 1), 0);
+  const canStar = type !== 'crumble' && liveStars < 7;
   if (canStar && (isFirst || rng() < 0.55)) {
     world.stars.push({
       id: world.nextId++,
@@ -235,12 +208,16 @@ function spawnPlatform(world, isFirst = false) {
     });
   }
 
-  // 下一块的间距：按当前难度带的 gap 区间取值，并硬性不超过跳跃高度的 60%
+  // 下一块的间距：落在下一难度带的 gap 区间内，并硬性不超过跳跃高度的 60%
   const nextMeters = meters + 10;
   const nextBand = bandFor(nextMeters).band;
   const nextP = bandProgress(nextBand, nextMeters);
   const gapBase = lerp(nextBand.gap[0], nextBand.gap[1], nextP);
-  const nextGap = clamp(gapBase * (0.9 + rng() * 0.2), 60, Math.min(116, MAX_GAP));
+  const nextGap = clamp(
+    gapBase * (0.94 + rng() * 0.12),
+    nextBand.gap[0],
+    Math.min(nextBand.gap[1], MAX_GAP, 116)
+  );
   world.nextY = y - nextGap;
   return plat;
 }
@@ -425,7 +402,8 @@ function cleanup(world) {
   if (world.platforms.length > 48) {
     world.platforms = world.platforms.filter((plat) => plat.type === 'ground' || plat.y < limit);
   }
-  if (world.stars.length > 12) {
+  // 已经吃掉的星星必须立刻回收：留到 length>12 才清理会把生成配额卡死。
+  if (world.stars.length && world.stars.some((star) => star.taken)) {
     world.stars = world.stars.filter((star) => !star.taken && star.y < limit);
   }
 }
@@ -437,9 +415,4 @@ export function ensurePlatforms(world) {
   while (world.nextY > limit && guard++ < 200) {
     spawnPlatform(world);
   }
-}
-
-// 供测试与调试使用：从外部注入一块平台
-export function resetSeed(world, seed) {
-  resetWorld(world, seed);
 }

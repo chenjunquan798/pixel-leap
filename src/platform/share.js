@@ -51,11 +51,12 @@ export function createShare({ t, ledger, onToast }) {
   async function share(data) {
     const text = t('share.text', { meters: data.meters, score: data.score });
     const url = shareLink();
-    ledger.record('share_open', { score: data.score, method: 'web_share' });
+    const payload = `${text} ${url}`;
 
     let file = null;
-    // 动态分享卡是 P1，默认构建不包含（PRD 11.6 包体门禁）；
-    // 提供 --with-card 构建时才有 renderShareCard。
+    /*#card*/
+    // 动态分享卡是 P1，默认构建会把这一段整体剔除（PRD 11.6 包体门禁）；
+    // 只有 `node build.mjs --with-card` 才会包含 src/ui/sharecard.js 与这段代码。
     if (typeof renderShareCard === 'function') {
       try {
         const canvas = renderShareCard({
@@ -71,11 +72,20 @@ export function createShare({ t, ledger, onToast }) {
         ledger.record('share_card_render_failure', { reason: 'render', fallback: 'static' });
       }
     }
+    /*#endcard*/
 
     const nav = typeof navigator !== 'undefined' ? navigator : {};
     const canFiles = !!(file && nav.canShare && nav.canShare({ files: [file] }));
-    let outcome = 'unsupported';
+    ledger.record('share_open', {
+      score: data.score,
+      method: canFiles ? 'web_share_file' : nav.share ? 'web_share' : 'copy',
+    });
 
+    // 在同一个用户手势里先把链接写进剪贴板（不 await）：
+    // 取消/超时/异常都能立刻给出「已复制」反馈，不必再等第二次异步复制。
+    const copyPromise = copyText(payload);
+
+    let outcome = 'unsupported';
     try {
       if (canFiles) {
         outcome = await withTimeout(nav.share({ files: [file], text, title: t('share.title') }));
@@ -96,7 +106,7 @@ export function createShare({ t, ledger, onToast }) {
       return { outcome };
     }
 
-    const copied = await copyText(`${text} ${url}`);
+    const copied = await copyPromise;
     ledger.record('share_outcome', {
       method: 'copy',
       result: copied ? outcome : 'copy_failed',
@@ -112,7 +122,7 @@ export function createShare({ t, ledger, onToast }) {
   return { share, shareLink };
 }
 
-function withTimeout(promise, ms = 8000) {
+function withTimeout(promise, ms = 6000) {
   return new Promise((resolve, reject) => {
     let settled = false;
     const timer = setTimeout(() => {

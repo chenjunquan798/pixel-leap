@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 1) 构建必须能从源码原样重建交付物（防止提交过期的 index.html）
+      - name: Build
+        run: node build.mjs
+
+      - name: Artifact is up to date
+        run: git diff --exit-code -- index.html
+
+      # 2) 300 秒机器人爬升 + 物理/生成/存储/构建门禁（PRD 8.6）
+      - name: Test
+        run: node --test "tests/*.test.mjs"
+
+      # 3) 包体与零第三方请求的硬门禁（PRD 11.2 / 11.6）
+      - name: Size and network budget
+        run: node --test "tests/build.test.mjs"

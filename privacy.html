@@ -60,10 +60,12 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:v
       <tr><td>最高分</td><td>菜单与结算页展示、破纪录判断</td><td>直到你清除站点数据</td></tr>
       <tr><td>静音设置</td><td>记住你的声音偏好</td><td>同上</td></tr>
       <tr><td>语言</td><td>中文 / English 切换</td><td>同上</td></tr>
+      <tr><td>累计局数、累计星星、最近游玩时间</td><td>本机统计趋势；不出设备</td><td>同上</td></tr>
+      <tr><td>会话计数（30 分钟无操作为新会话）</td><td>Plan B 的回访代理指标</td><td>同上</td></tr>
       <tr><td>本地局记录（最近 200 条）</td><td>只在本机统计局数、分数趋势与到达区域；用于开发自测</td><td>同上</td></tr>
     </tbody>
   </table>
-  <p>这些数据不出设备。你可以随时在浏览器「站点设置 → 清除数据」里删掉，或者在地址后加 <code>?debug=1</code> 打开本地记录面板，导出成 JSON 自己查看。</p>
+  <p>这些数据不出设备。你可以随时在浏览器「站点设置 → 清除数据」里删掉；想自己看一眼，按 F12 打开控制台执行 <code>PixelLeap.exportLedger()</code> 即可得到完整 JSON（不联网）。如果浏览器禁止本地存储（例如部分隐私模式），游戏会提示「本地存档不可用」，本局仍可正常游玩，只是刷新后不保留最高分。</p>
 
   <h2>3. 分享时会发生什么</h2>
   <ul>

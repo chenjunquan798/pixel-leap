@@ -100,6 +100,11 @@ export function createUI({ i18n }) {
     const inGame = name === null || name === 'pause' || name === 'over';
     els.hud.hidden = !inGame;
     els.touch.hidden = name !== null;
+    // 模态覆盖层打开时，HUD/触控键不应还能被 Tab 到或点到（A11Y-01 / aria-modal）
+    if (typeof HTMLElement !== 'undefined' && 'inert' in HTMLElement.prototype) {
+      els.hud.inert = name !== null;
+      els.touch.inert = name !== null;
+    }
   }
 
   function focusPrimary(name) {

@@ -335,12 +335,12 @@ body.touch-mode .touch-hint { display: block; }
 
 .btn-primary {
   color: #fff;
-  background: linear-gradient(180deg, #f0567f, var(--pink));
+  background: linear-gradient(180deg, #cc3a5c, #a8244a);
   border-color: #2a1522;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.28);
   box-shadow:
     0 5px 0 #2a1522,
-    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    inset 0 3px 0 rgba(255, 255, 255, 0.28),
     inset 0 -4px 0 rgba(0, 0, 0, 0.22);
 }
 
@@ -358,7 +358,7 @@ body.touch-mode .touch-hint { display: block; }
   min-height: 46px;
 }
 
-.btn-small { min-height: 40px; font-size: 13px; padding: 6px 10px; }
+
 
 .controls, .touch-hint, .tagline, .hint {
   margin: 0;
@@ -394,7 +394,7 @@ kbd {
 }
 
 .touch-hint { color: var(--muted); }
-.tagline { color: rgba(255, 243, 214, 0.45); font-size: clamp(10px, 2.4vmin, 12px); }
+.tagline { color: rgba(255, 243, 214, 0.68); font-size: clamp(10px, 2.4vmin, 12px); }
 
 .menu-foot {
   display: flex;
@@ -412,6 +412,7 @@ kbd {
 
 .link-btn {
   appearance: none;
+  position: relative;
   background: none;
   border: 0;
   padding: 6px 2px;
@@ -422,6 +423,13 @@ kbd {
   text-underline-offset: 3px;
   text-decoration-color: rgba(255, 243, 214, 0.3);
   cursor: pointer;
+}
+
+/* 视觉尺寸保持紧凑，但把命中区域扩到 ~44px（A11Y-02） */
+.link-btn::after {
+  content: "";
+  position: absolute;
+  inset: -11px -8px;
 }
 .link-btn:hover { color: var(--gold); }
 .link-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 2px; }
@@ -509,7 +517,7 @@ h2 {
 .toast {
   position: absolute;
   left: 50%;
-  bottom: 4%;
+  top: 11%;
   transform: translateX(-50%);
   z-index: 30;
   max-width: 86%;
@@ -523,6 +531,7 @@ h2 {
   text-align: center;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
   animation: toast-in 0.16s ease-out both;
+  pointer-events: none;
 }
 
 .toast[data-kind="ok"] { border-color: var(--gold); }
@@ -566,6 +575,8 @@ h2 {
     transition-duration: 0.001ms !important;
   }
   .screen { background: rgba(8, 6, 26, 0.82); }
+  /* 这两条提示靠 JS 定时器隐藏，不能用「动画结束在 opacity:0」的 keyframes */
+  .zone-toast, .toast { animation: none !important; opacity: 1 !important; }
 }
 
 /* 横屏手机：按高度缩放，保证舞台完整可见 */

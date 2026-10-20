@@ -1,12 +1,13 @@
 {
   "name": "pixel-leap",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "type": "module",
   "description": "像素跳跳乐 / Pixel Leap — 零安装、打开即玩的像素跳跃游戏",
   "scripts": {
     "build": "node build.mjs",
+    "build:card": "node build.mjs --with-card",
     "test": "node --test \"tests/*.test.mjs\"",
-    "check": "node --test tests/ && node build.mjs"
+    "check": "node build.mjs && node --test \"tests/*.test.mjs\""
   }
 }

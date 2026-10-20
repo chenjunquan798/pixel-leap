@@ -3,26 +3,11 @@ import assert from 'node:assert/strict';
 
 import { createWorld } from '../src/core/world.js';
 import { PHYS, STEP } from '../src/core/config.js';
+import { robotDirection } from '../src/core/bot.js';
 
 // PRD 8.6：机器人自动瞄准最近平台上方，连续 ≥300 秒；
 // 不卡死、高度持续增长、不出现不可达平台。
-export function robotDirection(world) {
-  const p = world.player;
-  // 抛物线顶点：上升时用能量守恒预测，顶点在一次跳跃内固定
-  const apex = p.vy < 0 ? p.y - (p.vy * p.vy) / (2 * PHYS.GRAVITY) : p.y;
-
-  // 落点 = 顶点下方最高的一块平台（下落时最先跨过的那块）
-  let target = null;
-  for (const plat of world.platforms) {
-    if (plat.state === 'gone') continue;
-    if (plat.y <= apex + 1) continue;
-    if (!target || plat.y < target.y) target = plat;
-  }
-  if (!target) return 0;
-  const err = target.x + target.w / 2 - p.x;
-  if (Math.abs(err) < 3) return 0;
-  return Math.sign(err);
-}
+// 这里直接复用生产用的 bot（菜单演示走同一套逻辑），避免测试里出现第二份实现。
 
 test('机器人连续爬升 300 秒：不死亡、不卡死、高度持续增长', () => {
   const w = createWorld({ seed: 20261020 });

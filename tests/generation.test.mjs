@@ -20,6 +20,23 @@ test('第一块平台固定在正上方，第一颗星在跳跃路径上', () =>
   assert.ok(first.y - star.y > 0 && first.y - star.y < 196, 'star is on the first jump path');
 });
 
+test('首屏只有一颗星，且没有任何两颗星重叠（回归：首星被重复生成）', () => {
+  for (const seed of [1, 7, 11, 42, 99]) {
+    const w = createWorld({ seed });
+    const seen = new Set();
+    for (const s of w.stars) {
+      const key = `${Math.round(s.x)},${Math.round(s.y)}`;
+      assert.ok(!seen.has(key), `seed ${seed}: duplicate star at ${key}`);
+      seen.add(key);
+    }
+    const first = w.platforms.find((p) => p.type !== 'ground');
+    const near = w.stars.filter(
+      (s) => Math.abs(s.x - (first.x + first.w / 2)) < 1 && Math.abs(s.y - (first.y - 64)) < 1
+    );
+    assert.equal(near.length, 1, `seed ${seed}: first platform must have exactly one star`);
+  }
+});
+
 test('前 420px 不出现特殊平台', () => {
   for (const seed of [1, 2, 3, 55, 99]) {
     const w = createWorld({ seed });

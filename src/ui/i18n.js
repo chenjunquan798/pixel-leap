@@ -2,7 +2,7 @@
 // 规则：开始/操作按钮动词优先；失败不说「你失败了」。
 
 const ZH = {
-  'app.title': '像素跳跳乐 Pixel Leap',
+  'app.title': '像素跳跳乐 Pixel Leap — 打开即玩的浏览器跳跃小游戏',
   'menu.kicker': '零安装 · 再来一局',
   'menu.best': '最高分',
   'menu.start': '开始跳跃',
@@ -15,10 +15,8 @@ const ZH = {
   'menu.lang': 'EN',
   'menu.privacy': '隐私',
   'menu.tagline': '打开即玩 · 无广告 · 无登录',
-  'menu.hint': '空格 / 回车 也可以开始',
 
   'hud.meters': '{n} m',
-  'hud.starLabel': '星星',
 
   'pause.kicker': 'PAUSED',
   'pause.title': '暂停',
@@ -46,7 +44,6 @@ const ZH = {
 
   'toast.audio': '音频不可用，游戏继续。',
   'toast.storage': '本地存档损坏，最高分已重置。',
-  'toast.copied': '链接已复制，去挑战朋友吧。',
   'toast.shareOk': '分享成功。',
   'toast.shareCancel': '已取消分享，链接已复制。',
   'toast.shareError': '分享失败，链接已复制。',
@@ -60,26 +57,22 @@ const ZH = {
   'a11y.menu': '主菜单。最高分 {best}。按空格开始。',
   'a11y.over': '本局结束，得分 {score}，高度 {meters} 米，星星 {stars} 颗。最高分 {best}。',
   'a11y.record': '新纪录！',
-  'a11y.best': '最高分 {best}。',
 
   'error.title': '游戏加载失败，请刷新重试。',
   'error.body': '画面初始化没有成功。刷新页面即可重新开始。',
   'error.refresh': '刷新页面',
   'error.storage': '本地存档不可用，本局仍可正常游玩。',
+  'error.context': '画面暂时中断，正在尝试恢复…',
+  'error.contextOk': '画面已恢复。',
 
   'share.title': '像素跳跳乐',
   'share.text': '我在像素跳跳乐跳到 {meters} 米、{score} 分，来挑战我！',
   'share.cardBest': '最高 {best}',
   'share.cardCta': '打开即玩，来挑战我',
-  'share.preview': '分享卡预览',
-
-  'debug.title': '本地记录',
-  'debug.export': '导出 JSON',
-  'debug.close': '关闭',
 };
 
 const EN = {
-  'app.title': 'Pixel Leap',
+  'app.title': 'Pixel Leap — a zero-install browser jumper',
   'menu.kicker': 'ZERO INSTALL · ONE MORE RUN',
   'menu.best': 'BEST',
   'menu.start': 'START RUN',
@@ -92,10 +85,8 @@ const EN = {
   'menu.lang': '中文',
   'menu.privacy': 'Privacy',
   'menu.tagline': 'Plays instantly · No ads · No sign-in',
-  'menu.hint': 'Space / Enter also starts',
 
   'hud.meters': '{n} m',
-  'hud.starLabel': 'stars',
 
   'pause.kicker': 'PAUSED',
   'pause.title': 'Paused',
@@ -123,7 +114,6 @@ const EN = {
 
   'toast.audio': 'Audio unavailable. The game continues.',
   'toast.storage': 'Saved score was damaged and has been reset.',
-  'toast.copied': 'Link copied — go challenge a friend.',
   'toast.shareOk': 'Shared.',
   'toast.shareCancel': 'Share cancelled. Link copied.',
   'toast.shareError': 'Share failed. Link copied.',
@@ -137,22 +127,18 @@ const EN = {
   'a11y.menu': 'Main menu. Best score {best}. Press space to start.',
   'a11y.over': 'Run complete. Score {score}, height {meters} meters, {stars} stars. Best score {best}.',
   'a11y.record': 'New best!',
-  'a11y.best': 'Best score {best}.',
 
   'error.title': "Couldn't load the game. Please refresh.",
   'error.body': 'The renderer failed to start. Refresh the page to try again.',
   'error.refresh': 'Refresh',
   'error.storage': 'Local storage is unavailable. You can still play.',
+  'error.context': 'The screen was interrupted. Trying to restore…',
+  'error.contextOk': 'Screen restored.',
 
   'share.title': 'Pixel Leap',
   'share.text': 'I hit {meters}m / {score} pts in Pixel Leap — beat me!',
   'share.cardBest': 'BEST {best}',
   'share.cardCta': 'Plays instantly — beat me',
-  'share.preview': 'Share card preview',
-
-  'debug.title': 'Local log',
-  'debug.export': 'Export JSON',
-  'debug.close': 'Close',
 };
 
 const DICTS = { zh: ZH, en: EN };

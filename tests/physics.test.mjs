@@ -148,6 +148,7 @@ test('同时按左右会互相抵消并停止', () => {
   const x0 = w.player.x;
   for (let i = 0; i < 30; i++) w.step();
   assert.ok(Math.abs(w.player.x - x0) < 1e-6, 'x should not drift');
+  assert.equal(w.player.vx, 0, 'vx should settle to exactly 0');
 });
 
 test('第一次起跳后镜头才会跟随，且只向上', () => {

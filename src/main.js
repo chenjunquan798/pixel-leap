@@ -2,6 +2,7 @@
 // 固定 60Hz 物理、渲染帧率无关；最多补 5 步，不追帧（PRD 11.1）。
 
 import { STEP, MAX_STEPS } from './core/config.js';
+import { pointsToBest } from './core/score.js';
 import { createWorld } from './core/world.js';
 import { robotDirection } from './core/bot.js';
 import { createRenderer } from './render/renderer.js';
@@ -23,7 +24,8 @@ function hashMessage(text) {
 }
 
 function boot() {
-  const store = createStore(safeStorage());
+  const { storage, ephemeral } = safeStorage();
+  const store = createStore(storage);
   const initial = store.getState();
   const langParam = params.get('lang');
   const i18n = createI18n(langParam === 'en' || langParam === 'zh' ? langParam : initial.lang);
@@ -81,7 +83,10 @@ function boot() {
   const widthBucket =
     window.innerWidth < 430 ? 'small' : window.innerWidth < 900 ? 'medium' : 'large';
   ledger.record('page_view', { ref: search, viewport_bucket: widthBucket });
-  if (store.corrupted) {
+  if (ephemeral) {
+    ledger.record('storage_error', { reason: 'unavailable' });
+    setTimeout(() => ui.toast(i18n.t('error.storage'), 'error'), 400);
+  } else if (store.corrupted) {
     ledger.record('storage_error', { reason: 'parse' });
     setTimeout(() => ui.toast(i18n.t('toast.storage'), 'error'), 400);
   }
@@ -94,6 +99,7 @@ function boot() {
   let fatalShown = false;
   let slowTime = 0;
   let lowQuality = false;
+  let restoreTimer = 0;
 
   // ------------------------------------------------------------- 状态迁移
   function startGame(source) {
@@ -154,6 +160,9 @@ function boot() {
   }
 
   function endRun() {
+    // 一帧内可能补跑多步：死亡后必须立刻拒绝重复结算，
+    // 否则局数、最高分与埋点会被重复计数。
+    if (mode !== 'playing') return;
     const stats = world.stats;
     ui.setHud(stats);
     const record = stats.score > best;
@@ -170,7 +179,7 @@ function boot() {
       score: stats.score,
       meters: stats.meters,
       stars: stats.stars,
-      duration: Math.round(world.time * 1000),
+      duration_ms: Math.round(world.time * 1000),
       zone: world.zone,
       cause: 'fall',
     });
@@ -184,7 +193,7 @@ function boot() {
       stars: stats.stars,
       best,
       record,
-      diff: Math.max(1, best - stats.score + 1),
+      diff: pointsToBest(stats.score, best),
     };
     ui.setOver(lastOver);
     ui.show('over');
@@ -279,7 +288,7 @@ function boot() {
     if (mode === 'playing') {
       acc += dt;
       let steps = 0;
-      while (acc >= STEP && steps < MAX_STEPS) {
+      while (acc >= STEP && steps < MAX_STEPS && mode === 'playing') {
         stepGame();
         acc -= STEP;
         steps++;
@@ -396,6 +405,8 @@ function boot() {
 
   window.addEventListener('keydown', (e) => {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
+    // 长按的自动重复不能反复切换暂停/静音
+    if (e.repeat) return;
     const tag = e.target && e.target.tagName;
     const onButton = tag === 'BUTTON' || tag === 'A';
     const key = e.key;
@@ -521,6 +532,24 @@ function boot() {
     e.preventDefault();
     pause();
     ledger.record('fatal_error', { type: 'context_lost' });
+    ui.toast(i18n.t('error.context'), 'error');
+    clearTimeout(restoreTimer);
+    restoreTimer = setTimeout(() => {
+      if (mode !== 'fatal') fatal();
+    }, 2500);
+  });
+
+  canvas.addEventListener('contextrestored', () => {
+    clearTimeout(restoreTimer);
+    try {
+      renderer.rebuild();
+      renderer.reset();
+    } catch {
+      fatal();
+      return;
+    }
+    ledger.record('context_restored', {});
+    ui.toast(i18n.t('error.contextOk'), 'ok');
   });
 
   window.addEventListener('error', (e) => {
@@ -535,7 +564,7 @@ function boot() {
 
   // 调试与手动研究入口（Plan B：完全本地）
   window.PixelLeap = {
-    version: '2.0.0',
+    version: '2.0.1',
     get state() {
       return { mode, best, muted, lang: i18n.lang, score: world.stats.score };
     },

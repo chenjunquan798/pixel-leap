@@ -4,19 +4,19 @@
 const SESSION_GAP_MS = 30 * 60 * 1000;
 
 export function createLedger(store) {
-  let sessionId = 1;
-  let lastAt = 0;
-
   function record(type, data = {}) {
     const now = Date.now();
-    if (lastAt && now - lastAt > SESSION_GAP_MS) sessionId++;
-    lastAt = now;
+    const state = store.getState();
+    // 会话号与「上次活动时间」都要持久化，否则每次刷新都会把会话数重置成 1
+    let sessionId = state.sessionId || 1;
+    if (state.lastActiveAt && now - state.lastActiveAt > SESSION_GAP_MS) sessionId++;
     const entry = {
       t: now,
       session: sessionId,
       type,
       ...bucketize(data),
     };
+    store.set({ sessionId, lastActiveAt: now });
     store.pushLedger(entry);
     return entry;
   }

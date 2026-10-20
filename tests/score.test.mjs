@@ -28,8 +28,10 @@ test('下坠不扣分：只记录最高点', () => {
 test('新纪录判定与「差多少」文案', () => {
   assert.equal(isNewBest(230, 180), true);
   assert.equal(isNewBest(180, 180), false, '平局不算新纪录');
-  assert.equal(pointsToBest(180, 230), 51);
-  assert.equal(pointsToBest(230, 230), 1, '需要再多 1 分才破纪录');
+  // PRD 6.2 的例子：本局 42、最高 80 → 「差 38 分破纪录」
+  assert.equal(pointsToBest(42, 80), 38);
+  assert.equal(pointsToBest(180, 230), 50);
+  assert.equal(pointsToBest(230, 230), 1, '同分时还需要 1 分才算破纪录');
   assert.equal(pointsToBest(240, 230), 0);
 });
 

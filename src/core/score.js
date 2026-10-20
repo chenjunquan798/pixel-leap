@@ -20,7 +20,11 @@ export function isNewBest(score, best) {
   return score > best;
 }
 
-// 结算页「差多少」文案用的差值；已破纪录时返回 0。
+// 结算页「差多少破纪录」文案用的差值。
+// PRD 6.2 的例子是 42 / 80 → 「差 38 分」，即 best - score；
+// 同分时返回 1（再得 1 分才算破纪录），已破纪录返回 0。
 export function pointsToBest(score, best) {
-  return Math.max(0, best - score + 1);
+  const diff = best - score;
+  if (diff > 0) return diff;
+  return diff === 0 ? 1 : 0;
 }

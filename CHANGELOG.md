@@ -1,5 +1,39 @@
 # Changelog
 
+## v2.0.1 — 2026-10-20
+
+首轮代码评审（独立 reviewer，范围 `4b825dc..8f84814`）后的修复版本。评审结论为 **No（with fixes）**，本版逐条处理。
+
+### 修复（Critical）
+- **星星会永久停止生成**：`spawnPlatform` 按 `stars.length < 7` 限流，但已吃掉的星星只在 `length > 12` 时才清理，导致吃满 7 颗后整局不再出现星星（约 87m 之后）。现在只统计未吃掉的星星，并在每次 cleanup 立刻回收。回归测试：`吃掉多颗星星后仍然继续生成新星星`。
+- **首颗星重复生成**：`resetWorld` 与 `spawnPlatform(isFirst)` 各生成了一颗同坐标的星星（+20、双音效、多占配额）。删除重复的那次 push。回归测试：`首屏只有一颗星，且没有任何两颗星重叠`。
+- **死亡结算重复触发**：掉帧时一帧补跑多步会让 `endRun` 触发 2–5 次，局数/账本被多记、死亡音效重放。现在 `endRun` 有 `mode` 守卫，步进循环在状态变化时立即停止。
+
+### 修复（Important）
+- **减弱动效不完整**：粒子此前只是变慢，现在真正减半；`prefers-reduced-motion` 下区域提示条不再因 keyframes 终帧 `opacity:0` 而不可见。
+- **主 CTA 对比度不足**：白字在 `#F0567F→#E0446F` 上只有 3.31–4.02:1。渐变改为 `#CC3A5C→#A8244A`（最浅端 4.84:1），tagline 透明度提到 68%；`build.test.mjs` 新增对比度断言。
+- **画布上下文丢失没有恢复路径**：新增 `contextlost` / `contextrestored` 处理——暂停、提示、重建渲染器；2.5s 内未恢复则进入致命错误页（刷新提示）。
+- **分享反馈延迟**：链接在同一个用户手势里先行写入剪贴板（不阻塞分享面板），取消/不支持/异常可立刻提示；超时从 8s 降到 6s。
+- **隐私模式存档静默失败**：`safeStorage()` 返回 `ephemeral` 标记，启动时提示「本地存档不可用，本局仍可正常游玩」。
+- **`?debug=1` 面板并不存在**（隐私页却写了）：改为控制台 `PixelLeap.exportLedger()`，并同步修正隐私页文案。
+- **缺失 CI / `npm run check` 在本机 Node 上失败**：新增 `.github/workflows/ci.yml`（构建 → 产物未被手改 → 测试），`check` 脚本改用 glob。
+
+### 修复（Minor，选做）
+- 「差 N 分破纪录」与 PRD 6.2 的例子对齐（`best - score`）。
+- 长按 P/Esc/M 不再自动重复切换；结算/暂停面板打开时 HUD 设 `inert`。
+- 提示条移到顶部并 `pointer-events:none`，不再挡住 320px 下的「返回首页」。
+- `document.title` 使用完整 SEO 标题；页脚链接用伪元素把命中区扩到 ~44px；`apple-touch-icon` 接上；`maskable` 改用带安全区的独立图标。
+- 损坏存档在复位后立即回写，不再每次刷新重复提示；会话号持久化，`summary().sessions` 不再恒为 1；`duration` → `duration_ms`。
+- 难度带回到 PRD 8.3 区间：宽度/间隙抖动不再越界（间隙下限 66），弹簧改为独立掷骰。
+- 删除死代码（`world.snapshot/press/release`、`resetSeed`、`ZONE_LABELS_*`、`compact()`、未用调色板项与 i18n key）。
+- 默认构建改为**剔除**分享卡代码块（而非仅不打包模块），并把 80KB 门禁改为十进制 80,000 B；超标时 `build.mjs` 以非零码退出。
+- 补充 `LICENSE`（MIT）、`<noscript>` 提示；README/CHANGELOG 数字与代码对齐。
+
+### 验证
+- `node --test "tests/*.test.mjs"`：**51 / 51 通过**（新增首星唯一、星星持续生成、死亡统计冻结、对比度 4 项）。
+- `index.html`：79,885 B（78.0 KiB，gzip 26,009 B），内联 JS 59,538 B，0 第三方请求。
+- Headless Edge（全新 profile，390×844 / 320×568）：0 console error；开始→输入→暂停→继续→结算→分享取消兜底→切换英文→减弱动效→空格/P/Esc 全部通过。
+
 ## v2.0.0 — 2026-10-20
 
 首个完整实现，对应 PRD v2.0 的 16 条 P0 需求。

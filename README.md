@@ -2,6 +2,7 @@
 
 > 一个打开链接就能玩的像素跳跃小游戏：零安装、零广告、零登录，一局 60 秒，失败也公平。
 > v2.0 实现自 PRD v2.0（`像素跳跳乐_PRD_v2.0.md`）的 P0 范围 + 部分 P1。
+> **发布版本 v2.0.1**（2026-10-20）：含首轮代码评审的修复，变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 **在线试玩**：<https://chenjunquan798.github.io/pixel-leap/>
 **直接运行**：双击 `index.html`（单文件，无构建产物依赖，离线可玩）
@@ -78,7 +79,7 @@ pixel-leap/
 │   └── index.template.html # HTML 骨架（构建时注入 CSS/JS）
 ├── styles.css              # DOM 层样式
 ├── build.mjs               # 零依赖构建：模块 → 单文件
-├── tests/                  # node:test 测试（42 项）
+├── tests/                  # node:test 测试（51 项）
 ├── tools/                  # 开发工具（截图验证、OG 图生成）
 ├── assets/                 # OG 图与 PWA 图标
 ├── privacy.html            # 隐私与无障碍说明
@@ -115,7 +116,15 @@ npx serve .
 - 保守压缩：去注释、去缩进、压空白（保留字符串与正则原样），不改变语义；
 - 输出唯一交付物 `index.html`。
 
-`tests/build.test.mjs` 会检查包体、零第三方请求、SEO 元数据、无障碍骨架与 PRD 文案，构建超标直接失败。
+`tests/build.test.mjs` 会检查包体（80,000 B 硬门禁）、配色对比度、零第三方请求、SEO 元数据、无障碍骨架与 PRD 文案；`node build.mjs` 自身在超预算时也会以非零码退出。
+
+### 持续集成
+
+`.github/workflows/ci.yml` 在每次 push / PR 上跑三件事：`node build.mjs` → `git diff --exit-code -- index.html`（防止提交过期的构建产物）→ `node --test "tests/*.test.mjs"`。PRD 8.6 要求的 300 秒机器人爬升与包体门禁因此是「每次构建都跑」而不是「记得手动跑」。本地等价命令：
+
+```bash
+npm run check    # node build.mjs && node --test "tests/*.test.mjs"
+```
 
 ---
 
@@ -123,13 +132,15 @@ npx serve .
 
 | 指标 | 目标（PRD） | 当前 |
 |---|---|---|
-| 单文件 | ≤80 KB（gzip 前） | **77 KB**（gzip ≈ 26 KB） |
+| 单文件 | ≤80 KB（gzip 前） | **79,885 B**（78.0 KiB；gzip 26,009 B） |
 | 第三方请求 | 0 | **0**（无脚本 / 样式 / 字体 / 图片请求） |
-| 内联 JS | ≤80 KB | **≈ 62 KB** |
+| 内联 JS | ≤80 KB | **59,538 B**（58.1 KiB） |
 | 首屏 | 1.2s 内可交互 | 无网络请求，HTML 直出即菜单；无 spinner |
 | 帧率 | p95 ≤16.7ms | 固定 60Hz 物理 + 一次 draw；低端机自动降级 |
 
-**为什么默认不打包动态分享卡**：PRD 11.6 规定「HTML + 必要资源 gzip 前 ≤80KB，超过即放弃该 P1，按 动态分享图 → 英文界面 → PWA → 皮肤 的顺序砍」。加入动态分享卡会把包体推到 ≈82KB，因此默认构建按 PRD 把这一项砍掉，分享仍走 P0 的「Web Share / 复制链接」路径，社交预览由静态 `assets/og-image.png` 负责。需要动态分享图时运行 `node build.mjs --with-card` 即可，代码完整保留在 `src/ui/sharecard.js`。
+> 80 KB 按十进制字节计（PRD 自己的 57 KB 基线 = 57,044 B）。`tests/build.test.mjs` 与 `node build.mjs` 都以 80,000 B 为硬门禁，超标会让构建以非零码退出。
+
+**为什么默认不打包动态分享卡**：PRD 11.6 规定「HTML + 必要资源 gzip 前 ≤80KB，超过即放弃该 P1，按 动态分享图 → 英文界面 → PWA → 皮肤 的顺序砍」。动态分享卡会把包体推到 ≈83KB，因此默认构建按 PRD 把这一项砍掉：`build.mjs` 会连同 `src/ui/sharecard.js` 和 `share.js` 里的 `/*#card*/ … /*#endcard*/` 代码块一起剔除。分享仍走 P0 的「Web Share / 复制链接」路径，社交预览由静态 `assets/og-image.png` 负责。需要动态分享图时运行 `node build.mjs --with-card`（该构建会明确标注超预算）。
 
 ---
 
@@ -141,13 +152,14 @@ node --test "tests/*.test.mjs"
 
 | 文件 | 覆盖 |
 |---|---|
-| `physics.test.mjs` | 跳跃高度 196px、1500px/s 不穿透、9px 容错、只从上方落地、同时按左右抵消、镜头只上不下、死亡线 |
-| `generation.test.mjs` | 首块平台居中、首星可达、前 420px 无特殊平台、同种子可复现、间隙/宽度/偏移上限、难度递增、星星可达 |
-| `robot.test.mjs` | **300 秒机器人爬升**：不死亡、不卡死、高度持续增长、无不可达平台、固定步进可复现 |
-| `score.test.mjs` | 8px=1m、星星 +10、下坠不扣分、平局不算新纪录、大数精度 |
+| `physics.test.mjs` | 跳跃高度 196px、1500px/s 不穿透、9px 容错、只从上方落地、同时按左右抵消且 vx 归零、镜头只上不下、死亡线 |
+| `generation.test.mjs` | 首块平台居中、首星唯一且不重叠、前 420px 无特殊平台、同种子可复现、间隙/宽度/偏移上限、难度递增、星星可达 |
+| `mechanics.test.mjs` | 星星只计一次、吃掉后仍持续生成（回归）、弹簧一次性、碎裂 0.28s、移动平台不越界、区域/里程碑各触发一次、死亡后统计冻结 |
+| `robot.test.mjs` | **300 秒机器人爬升**（复用生产 bot）：不死亡、不卡死、高度持续增长、无不可达平台、固定步进可复现 |
+| `score.test.mjs` | 8px=1m、星星 +10、下坠不扣分、平局不算新纪录、「差 N 分」与 PRD 例子一致、大数精度 |
 | `storage.test.mjs` | 损坏 JSON 复位、非法字段清洗、只增不减、隐私模式不阻断、账本 200 条上限 |
 | `i18n.test.mjs` | 中英 key 一致、无遗留占位符、分享文案无 PII、区域名 |
-| `build.test.mjs` | 包体、语法、零第三方请求、SEO、aria-live/按钮类型、PRD 文案、资源存在 |
+| `build.test.mjs` | 包体（80,000 B 硬门禁）、**配色对比度**、语法、零第三方请求、SEO、aria-live/按钮类型、PRD 文案、资源存在 |
 
 真实浏览器验证（需要本机 Edge）：
 
@@ -163,10 +175,10 @@ node tools/zones.mjs "http://127.0.0.1:8123/index.html" build/shots --w=390 --h=
 
 ## 无障碍（WCAG 2.2 AA · 核心 UI）
 
-- 菜单、暂停、结算、分享全部是真实 `<button>`，Tab 顺序符合阅读顺序，`:focus-visible` 有 3px 金色描边。
+- 菜单、暂停、结算、分享全部是真实 `<button>`，Tab 顺序符合阅读顺序，`:focus-visible` 有 3px 金色描边；模态面板打开时 HUD 与触控键设为 `inert`，焦点不会跑到面板背后。
 - `aria-live="polite"` 只在状态切换时播报，文案与 PRD 10.2 一致；结算包含分数、高度、星星、最高分与新纪录。
-- 支持 `prefers-reduced-motion`：关闭震屏、粒子减半、区域过渡即时；**不会**因此静音。
-- 文字对比度 ≥4.5:1，触控目标 ≥44×44px，320px 宽与 200% 缩放不丢功能。
+- 支持 `prefers-reduced-motion`：关闭震屏、**粒子减半**、区域过渡即时，提示条仍然可见；**不会**因此静音。
+- 文字对比度 ≥4.5:1（主 CTA 白字压在 `#CC3A5C→#A8244A` 渐变上，最浅端 4.84:1；`tests/build.test.mjs` 有对比度断言），触控目标 ≥44×44px（页脚链接用伪元素扩大命中区），320px 宽与 200% 缩放不丢功能。
 - **已知边界**：Canvas 内的平台 / 星星 / 角色无法被屏幕阅读器逐项描述，完全非视觉玩家无法独立完成核心循环。这一点写在 `privacy.html` 里，不包装成「已完全无障碍」。
 
 ---
@@ -174,12 +186,12 @@ node tools/zones.mjs "http://127.0.0.1:8123/index.html" build/shots --w=390 --h=
 ## 隐私（Plan B：零上报）
 
 - 无 Cookie、无第三方脚本、无广告、无账号、无网络上报；游戏运行时请求数为 0。
-- 只写一个 `localStorage` 键 `pixelLeap.v2`：最高分、静音、语言、最近 200 条本地局记录（含分数、高度、星星、时长、区域）。
+- 只写一个 `localStorage` 键 `pixelLeap.v2`：最高分、静音、语言、累计局数/星星、会话计数，以及最近 200 条本地局记录（含分数、高度、星星、时长、区域）。
 - 分享必须由玩家主动触发，链接只带 `?ref=share`，不含任何标识。
-- 本地记录可通过控制台导出（不联网）：
+- 本地记录可通过控制台导出（不联网；隐私模式下存储不可用时会提示，且不落盘）：
 
 ```js
-PixelLeap.exportLedger()   // 返回 JSON 字符串
+PixelLeap.exportLedger()   // 返回 JSON 字符串，可自行保存
 PixelLeap.summary()        // { events, sessions, runs, best, avgScore, shares }
 PixelLeap.state            // { mode, best, muted, lang, score }
 ```
@@ -209,7 +221,7 @@ PixelLeap.state            // { mode, best, muted, lang, score }
 | FR-15 | 标题/描述/canonical/OG/Twitter/JSON-LD | ✅ | `index.html` 头部 + `assets/og-image.png` |
 | FR-16 | Plan B：零上报，本地调试与导出 | ✅ | `ledger.js` + `PixelLeap.exportLedger()` |
 
-P1 完成 2 项：**PWA / 离线缓存**（`sw.js` + manifest）、**英文界面**（可切换 / `?lang=en`）。动态分享卡按包体门禁默认关闭，可用构建开关打开；每日挑战、触觉反馈、皮肤未实现（PRD 允许后置）。
+P1 完成 2 项：**PWA / 离线缓存**（`sw.js` + manifest）、**英文界面**（可切换 / `?lang=en`）。动态分享卡按包体门禁默认在构建时剔除，可用 `--with-card` 打开；每日挑战、触觉反馈、皮肤未实现（PRD 允许后置）。
 
 ---
 
