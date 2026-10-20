@@ -1,0 +1,20 @@
+{
+  "name": "像素跳跳乐 Pixel Leap",
+  "short_name": "Pixel Leap",
+  "description": "打开即玩的像素跳跃小游戏：踩平台、吃星星、刷新最高分。无广告、无登录。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "./?ref=pwa",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#17101F",
+  "theme_color": "#17101F",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

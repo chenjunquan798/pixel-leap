@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>像素跳跳乐 Pixel Leap — 打开即玩的浏览器跳跃小游戏</title>
+<meta name="description" content="像素跳跳乐 Pixel Leap：无需安装、无广告、无登录的浏览器跳跃小游戏。点开就能玩，60 秒一局，踩平台、吃星星、刷新最高分，再分享给朋友。">
+<link rel="canonical" href="https://chenjunquan798.github.io/pixel-leap/">
+<meta name="theme-color" content="#17101F">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="像素跳跳乐 Pixel Leap">
+<meta property="og:title" content="像素跳跳乐 Pixel Leap — 打开即玩">
+<meta property="og:description" content="零安装、无广告、无登录的像素跳跃游戏。点开链接就能跳，60 秒一局，来挑战我的最高分。">
+<meta property="og:url" content="https://chenjunquan798.github.io/pixel-leap/">
+<meta property="og:image" content="https://chenjunquan798.github.io/pixel-leap/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="像素跳跳乐：像素小猫在霞光层平台间跳跃，画面显示 230 分">
+<meta property="og:locale" content="zh_CN">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="像素跳跳乐 Pixel Leap">
+<meta name="twitter:description" content="打开即玩的像素跳跃游戏：踩平台、吃星星、刷新最高分。">
+<meta name="twitter:image" content="https://chenjunquan798.github.io/pixel-leap/assets/og-image.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2317101F'/%3E%3Crect x='6' y='10' width='20' height='14' fill='%23FFF3D6'/%3E%3Crect x='7' y='5' width='5' height='7' fill='%23FFF3D6'/%3E%3Crect x='20' y='5' width='5' height='7' fill='%23FFF3D6'/%3E%3Crect x='8' y='5' width='3' height='4' fill='%23E0446F'/%3E%3Crect x='21' y='5' width='3' height='4' fill='%23E0446F'/%3E%3Crect x='10' y='14' width='4' height='4' fill='%2317101F'/%3E%3Crect x='18' y='14' width='4' height='4' fill='%2317101F'/%3E%3Crect x='6' y='20' width='20' height='4' fill='%232EC4B6'/%3E%3C/svg%3E">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"像素跳跳乐 Pixel Leap","url":"https://chenjunquan798.github.io/pixel-leap/","description":"零安装、无广告、无登录的浏览器像素跳跃游戏。踩平台、吃星星、刷新最高分。","genre":["Arcade","Platformer"],"gamePlatform":"Web browser","playMode":"SinglePlayer","applicationCategory":"Game","operatingSystem":"Web","inLanguage":["zh-CN","en"],"offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"},"image":"https://chenjunquan798.github.io/pixel-leap/assets/og-image.png"}
+</script>
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<div class="app">
+  <main class="stage" id="stage">
+    <canvas id="game" width="480" height="720" tabindex="-1" role="img" aria-label="游戏画面"></canvas>
+
+    <div class="hud" id="hud" hidden>
+      <div class="hud-left">
+        <b class="hud-score" id="hud-score">0</b>
+        <span class="hud-height" id="hud-height">0 m</span>
+      </div>
+      <div class="hud-right">
+        <span class="pill" id="hud-stars">
+          <span class="star-ico" aria-hidden="true">★</span><span id="hud-star-count">0</span>
+        </span>
+        <button class="icon-btn" id="btn-pause" type="button" aria-label="暂停">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14"></rect><rect x="14" y="5" width="4" height="14"></rect></svg>
+        </button>
+        <button class="icon-btn" id="btn-mute" type="button" aria-label="静音" aria-pressed="false">
+          <svg class="ico-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"></path><path d="M16 8.5v7M19 10.5v3" class="stroke"></path></svg>
+          <svg class="ico-off" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M4 9h4l5-4v14l-5-4H4z"></path><path d="M16.5 9.5l5 5m0-5l-5 5" class="stroke"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="touch" id="touch" hidden aria-hidden="true">
+      <button class="touch-btn" id="touch-left" type="button" tabindex="-1">‹</button>
+      <button class="touch-btn" id="touch-right" type="button" tabindex="-1">›</button>
+    </div>
+
+    <div class="screen" id="screen-menu">
+      <div class="panel menu-panel">
+        <p class="kicker" data-i18n="menu.kicker">零安装 · 再来一局</p>
+        <h1 class="logo" aria-label="像素跳跳乐 Pixel Leap"><span>PIXEL</span><span class="logo-2">LEAP</span></h1>
+        <p class="subtitle">像素跳跳乐</p>
+        <p class="best-line"><span data-i18n="menu.best">最高分</span><b id="menu-best">0</b></p>
+        <button class="btn btn-primary" id="btn-start" type="button" data-i18n="menu.start">开始跳跃</button>
+        <p class="controls"><kbd>←</kbd><kbd>→</kbd><span class="sep">/</span><kbd>A</kbd><kbd>D</kbd><span data-i18n="menu.controls">移动</span></p>
+        <p class="touch-hint" data-i18n="menu.touch">触屏：按住屏幕左右两侧移动</p>
+        <p class="tagline" data-i18n="menu.tagline">打开即玩 · 无广告 · 无登录</p>
+        <div class="menu-foot">
+          <button class="link-btn" id="btn-sound" type="button" data-i18n="menu.soundOn">音效 开</button>
+          <span class="dot" aria-hidden="true">·</span>
+          <button class="link-btn" id="btn-lang" type="button" data-i18n="menu.lang">EN</button>
+          <span class="dot" aria-hidden="true">·</span>
+          <a class="link-btn" href="privacy.html" data-i18n="menu.privacy">隐私</a>
+          <span class="dot" aria-hidden="true">·</span>
+          <span class="version">v2.0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen" id="screen-pause" hidden role="dialog" aria-modal="true" aria-labelledby="pause-title">
+      <div class="panel narrow">
+        <p class="kicker" data-i18n="pause.kicker">PAUSED</p>
+        <h2 id="pause-title" data-i18n="pause.title">暂停</h2>
+        <p class="hint" data-i18n="pause.hint">喘口气，星星不会跑。</p>
+        <button class="btn btn-primary" id="btn-resume" type="button" data-i18n="pause.resume">继续</button>
+        <button class="btn" id="btn-pause-restart" type="button" data-i18n="pause.restart">重开</button>
+        <button class="btn btn-ghost" id="btn-pause-home" type="button" data-i18n="pause.home">回首页</button>
+      </div>
+    </div>
+
+    <div class="screen" id="screen-over" hidden role="dialog" aria-modal="true" aria-labelledby="over-title">
+      <div class="panel over-panel">
+        <p class="kicker" data-i18n="over.kicker">RUN COMPLETE</p>
+        <h2 id="over-title" data-i18n="over.title">本局结束</h2>
+        <p class="record-badge" id="over-record" hidden data-i18n="over.record">新纪录！</p>
+        <p class="score-big"><span id="over-score">0</span><small data-i18n="over.points">分</small></p>
+        <dl class="stats">
+          <div><dt data-i18n="over.height">高度</dt><dd id="over-height">0 m</dd></div>
+          <div><dt data-i18n="over.stars">星星</dt><dd id="over-stars">0</dd></div>
+          <div><dt data-i18n="over.best">最高分</dt><dd id="over-best">0</dd></div>
+        </dl>
+        <p class="diff" id="over-diff"></p>
+        <button class="btn btn-primary" id="btn-retry" type="button" data-i18n="over.retry">再来一次</button>
+        <button class="btn btn-share" id="btn-share" type="button" hidden data-i18n="over.share">分享成绩</button>
+        <button class="btn btn-ghost" id="btn-home" type="button" data-i18n="over.home">返回首页</button>
+      </div>
+    </div>
+
+    <div class="screen" id="screen-fatal" hidden role="alertdialog" aria-labelledby="fatal-title">
+      <div class="panel narrow">
+        <h2 id="fatal-title" data-i18n="error.title">游戏加载失败，请刷新重试。</h2>
+        <p class="hint" data-i18n="error.body">画面初始化没有成功。刷新页面即可重新开始。</p>
+        <button class="btn btn-primary" id="btn-refresh" type="button" data-i18n="error.refresh">刷新页面</button>
+      </div>
+    </div>
+
+    <div class="zone-toast" id="zone-toast" hidden></div>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <p class="sr-only" id="live" aria-live="polite" aria-atomic="true"></p>
+  </main>
+</div>
+<script>
+/*__JS__*/
+</script>
+</body>
+</html>
